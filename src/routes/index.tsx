@@ -374,7 +374,7 @@ function JiyaPage() {
               placeholder={
                 listening
                   ? "Sun rahi hoon... boliye"
-                  : "LIkhein ya mic se bolein — jaise 'JIYA, YouTube kholo'"
+                  : "Likhein ya mic se bolein — jaise 'JIYA, YouTube kholo'"
               }
             />
             <PromptInputFooter className="justify-between">
