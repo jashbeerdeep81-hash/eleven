@@ -77,21 +77,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "JIYA — Indian AI Voice Assistant" },
+      {
+        name: "description",
+        content:
+          "JIYA is a friendly Indian AI assistant that understands Hindi, Hinglish and English — chat or speak naturally.",
+      },
+      { name: "author", content: "JIYA" },
+      { property: "og:title", content: "JIYA — Indian AI Voice Assistant" },
+      {
+        property: "og:description",
+        content:
+          "Chat or talk with JIYA, a friendly Indian AI assistant fluent in Hindi, Hinglish and English.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,
