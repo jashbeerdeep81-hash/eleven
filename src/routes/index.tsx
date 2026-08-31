@@ -117,13 +117,13 @@ function runAction(action: JiyaAction): boolean {
   const p = action.parameters ?? {};
   switch (action.action) {
     case "OPEN_URL": {
-      const url = p.url ?? p.package;
+      const url = p["url"] ?? p["package"];
       if (!url) return false;
       window.open(url.startsWith("http") ? url : `https://${url}`, "_blank", "noopener");
       return true;
     }
     case "WEB_SEARCH": {
-      const q = p.query ?? p.q ?? "";
+      const q = p["query"] ?? p["q"] ?? "";
       if (!q) return false;
       window.open(
         `https://www.google.com/search?q=${encodeURIComponent(q)}`,
@@ -133,13 +133,13 @@ function runAction(action: JiyaAction): boolean {
       return true;
     }
     case "DIAL": {
-      const number = p.number ?? p.phone;
+      const number = p["number"] ?? p["phone"];
       if (!number) return false;
       window.location.href = `tel:${number}`;
       return true;
     }
     case "SHARE_TEXT": {
-      const text = p.text ?? "";
+      const text = p["text"] ?? "";
       if (!text) return false;
       if (navigator.share) {
         void navigator.share({ text }).catch(() => undefined);
@@ -181,7 +181,7 @@ type SpeechRecognitionLike = {
 function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as Record<string, unknown>;
-  return (w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null) as
+  return (w["SpeechRecognition"] ?? w["webkitSpeechRecognition"] ?? null) as
     | (new () => SpeechRecognitionLike)
     | null;
 }
