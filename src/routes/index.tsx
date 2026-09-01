@@ -70,10 +70,14 @@ type SpeechRecognitionLike = {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
-  onresult: ((event: {
-    resultIndex: number;
-    results: ArrayLike<ArrayLike<{ transcript: string; confidence?: number }> & { isFinal?: boolean }>;
-  }) => void) | null;
+  onresult:
+    | ((event: {
+        resultIndex: number;
+        results: ArrayLike<
+          ArrayLike<{ transcript: string; confidence?: number }> & { isFinal?: boolean }
+        >;
+      }) => void)
+    | null;
   onend: (() => void) | null;
   onerror: (() => void) | null;
   start: () => void;
@@ -84,17 +88,26 @@ function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as Record<string, unknown>;
   return (w["SpeechRecognition"] ?? w["webkitSpeechRecognition"] ?? null) as
-    | (new () => SpeechRecognitionLike)
-    | null;
+    (new () => SpeechRecognitionLike) | null;
 }
 
 const OWNER_NAME = "Jashbeer";
 const OWNER_MUMMY = "Anty";
-const QUICK_PROMPTS = ["JIYA, YouTube kholo", "Aaj ka mausam kaisa hai?", "Google pe biryani search karo", "Aaj ki news sunao"];
+const QUICK_PROMPTS = [
+  "JIYA, YouTube kholo",
+  "Aaj ka mausam kaisa hai?",
+  "Google pe biryani search karo",
+  "Aaj ki news sunao",
+];
 
 type FreeResult = { reply: string; status: string; url?: string };
 
-const normalize = (text: string) => text.toLowerCase().replace(/[?!.,]/g, " ").replace(/\s+/g, " ").trim();
+const normalize = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[?!.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 function makeMessage(role: UIMessage["role"], text: string): UIMessage {
   return { id: crypto.randomUUID(), role, parts: [{ type: "text", text }] };
@@ -102,7 +115,10 @@ function makeMessage(role: UIMessage["role"], text: string): UIMessage {
 
 function getLocalMemories(): Array<{ key: string; value: string }> {
   try {
-    return JSON.parse(localStorage.getItem("jiya_memories") ?? "[]") as Array<{ key: string; value: string }>;
+    return JSON.parse(localStorage.getItem("jiya_memories") ?? "[]") as Array<{
+      key: string;
+      value: string;
+    }>;
   } catch {
     return [];
   }
@@ -175,9 +191,12 @@ function extractAfter(text: string, patterns: string[]) {
 }
 
 async function freeLookup(type: string, query = "") {
-  const response = await fetch(`/api/free-data?type=${encodeURIComponent(type)}&q=${encodeURIComponent(query)}`);
+  const response = await fetch(
+    `/api/free-data?type=${encodeURIComponent(type)}&q=${encodeURIComponent(query)}`,
+  );
   const data = (await response.json()) as Record<string, unknown>;
-  if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Free service unavailable.");
+  if (!response.ok)
+    throw new Error(typeof data.error === "string" ? data.error : "Free service unavailable.");
   return data;
 }
 
@@ -274,9 +293,7 @@ function JiyaPage() {
           className="gap-1.5"
         >
           {voiceEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-          <span className="hidden sm:inline">
-            {voiceEnabled ? "Awaaz on" : "Awaaz off"}
-          </span>
+          <span className="hidden sm:inline">{voiceEnabled ? "Awaaz on" : "Awaaz off"}</span>
         </Button>
       </header>
 
@@ -316,8 +333,7 @@ function JiyaPage() {
                   .filter((p) => p.type === "text")
                   .map((p) => p.text)
                   .join("");
-                const action =
-                  message.role === "assistant" ? parseAction(text) : null;
+                const action = message.role === "assistant" ? parseAction(text) : null;
 
                 return (
                   <Message key={message.id} from={message.role}>
@@ -403,9 +419,7 @@ function ActionCard({ action }: { action: JiyaAction }) {
 
   return (
     <div className="space-y-3">
-      {action.spoken_response && (
-        <p className="text-foreground">{action.spoken_response}</p>
-      )}
+      {action.spoken_response && <p className="text-foreground">{action.spoken_response}</p>}
       <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
         <div className="flex items-center gap-2 text-sm font-medium text-card-foreground">
           <Icon className="size-4 text-primary" />
@@ -440,8 +454,8 @@ function ActionCard({ action }: { action: JiyaAction }) {
           </Button>
         ) : (
           <p className="mt-3 text-xs text-muted-foreground">
-            Ye action abhi JIYA ke web version mein supported nahi hai — Android app
-            mein available hoga.
+            Ye action abhi JIYA ke web version mein supported nahi hai — Android app mein available
+            hoga.
           </p>
         )}
       </div>

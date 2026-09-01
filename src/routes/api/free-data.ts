@@ -23,10 +23,9 @@ export const Route = createFileRoute("/api/free-data")({
 
         try {
           if (type === "weather") {
-            const response = await fetch(
-              `https://wttr.in/${encodeURIComponent(query)}?format=j1`,
-              { headers: { "User-Agent": "JIYA OS free data" } },
-            );
+            const response = await fetch(`https://wttr.in/${encodeURIComponent(query)}?format=j1`, {
+              headers: { "User-Agent": "JIYA OS free data" },
+            });
             if (!response.ok) return json({ error: "Weather service unavailable." }, 502);
             const data = (await response.json()) as {
               current_condition?: Array<{
