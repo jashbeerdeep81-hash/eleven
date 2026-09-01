@@ -1,18 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import type { UIMessage } from "ai";
 import {
+  ArrowLeft,
+  Camera,
+  CalendarDays,
+  CloudSun,
+  ExternalLink,
+  FileImage,
+  Globe,
+  History,
   Mic,
   MicOff,
+  Newspaper,
+  Pause,
+  Play,
+  Search,
+  Share2,
+  Smartphone,
+  Timer,
   Volume2,
   VolumeX,
-  Globe,
-  Search,
-  Phone,
-  Share2,
-  ExternalLink,
-  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,11 +30,7 @@ import {
   ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputFooter,
@@ -38,6 +42,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import jiyaLogo from "@/assets/jiya-logo.png";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -61,117 +66,14 @@ export const Route = createFileRoute("/")({
   component: JiyaPage,
 });
 
-type JiyaAction = {
-  type: "ACTION";
-  action: string;
-  parameters?: Record<string, string>;
-  spoken_response?: string;
-};
-
-function parseAction(text: string): JiyaAction | null {
-  const trimmed = text.trim();
-  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return null;
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (parsed && parsed.type === "ACTION" && typeof parsed.action === "string") {
-      return parsed as JiyaAction;
-    }
-    if (parsed && parsed.type === "CHAT" && typeof parsed.reply === "string") {
-      return null;
-    }
-  } catch {
-    // not JSON — plain chat text
-  }
-  return null;
-}
-
-function extractChatText(text: string): string {
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed?.type === "CHAT" && typeof parsed.reply === "string") {
-        return parsed.reply;
-      }
-    } catch {
-      // fall through
-    }
-  }
-  return text;
-}
-
-const ACTION_META: Record<
-  string,
-  { label: string; icon: typeof Globe; runnable: boolean }
-> = {
-  OPEN_URL: { label: "Open link", icon: ExternalLink, runnable: true },
-  WEB_SEARCH: { label: "Web search", icon: Search, runnable: true },
-  DIAL: { label: "Call", icon: Phone, runnable: true },
-  SHARE_TEXT: { label: "Share text", icon: Share2, runnable: true },
-  OPEN_APP: { label: "Open app", icon: ExternalLink, runnable: false },
-  OPEN_SETTINGS: { label: "Open settings", icon: AlertTriangle, runnable: false },
-  OPEN_APP_SETTINGS: { label: "Open app settings", icon: AlertTriangle, runnable: false },
-};
-
-function runAction(action: JiyaAction): boolean {
-  const p = action.parameters ?? {};
-  switch (action.action) {
-    case "OPEN_URL": {
-      const url = p["url"] ?? p["package"];
-      if (!url) return false;
-      window.open(url.startsWith("http") ? url : `https://${url}`, "_blank", "noopener");
-      return true;
-    }
-    case "WEB_SEARCH": {
-      const q = p["query"] ?? p["q"] ?? "";
-      if (!q) return false;
-      window.open(
-        `https://www.google.com/search?q=${encodeURIComponent(q)}`,
-        "_blank",
-        "noopener",
-      );
-      return true;
-    }
-    case "DIAL": {
-      const number = p["number"] ?? p["phone"];
-      if (!number) return false;
-      window.location.href = `tel:${number}`;
-      return true;
-    }
-    case "SHARE_TEXT": {
-      const text = p["text"] ?? "";
-      if (!text) return false;
-      if (navigator.share) {
-        void navigator.share({ text }).catch(() => undefined);
-        return true;
-      }
-      void navigator.clipboard?.writeText(text);
-      return true;
-    }
-    default:
-      return false;
-  }
-}
-
-function speak(text: string) {
-  if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  const hasDevanagari = /[\u0900-\u097F]/.test(text);
-  utterance.lang = hasDevanagari ? "hi-IN" : "en-IN";
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = voices.find((v) =>
-    v.lang.toLowerCase().startsWith(hasDevanagari ? "hi" : "en-in"),
-  );
-  if (preferred) utterance.voice = preferred;
-  utterance.rate = 1.02;
-  window.speechSynthesis.speak(utterance);
-}
-
 type SpeechRecognitionLike = {
   lang: string;
+  continuous: boolean;
   interimResults: boolean;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onresult: ((event: {
+    resultIndex: number;
+    results: ArrayLike<ArrayLike<{ transcript: string; confidence?: number }> & { isFinal?: boolean }>;
+  }) => void) | null;
   onend: (() => void) | null;
   onerror: (() => void) | null;
   start: () => void;
@@ -186,12 +88,98 @@ function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
     | null;
 }
 
-const QUICK_PROMPTS = [
-  "JIYA, YouTube kholo",
-  "Aaj ka mausam kaisa hai?",
-  "Ek funny joke sunao",
-  "Google pe 'best biryani recipe' search karo",
-];
+const OWNER_NAME = "Jashbeer";
+const OWNER_MUMMY = "Anty";
+const QUICK_PROMPTS = ["JIYA, YouTube kholo", "Aaj ka mausam kaisa hai?", "Google pe biryani search karo", "Aaj ki news sunao"];
+
+type FreeResult = { reply: string; status: string; url?: string };
+
+const normalize = (text: string) => text.toLowerCase().replace(/[?!.,]/g, " ").replace(/\s+/g, " ").trim();
+
+function makeMessage(role: UIMessage["role"], text: string): UIMessage {
+  return { id: crypto.randomUUID(), role, parts: [{ type: "text", text }] };
+}
+
+function getLocalMemories(): Array<{ key: string; value: string }> {
+  try {
+    return JSON.parse(localStorage.getItem("jiya_memories") ?? "[]") as Array<{ key: string; value: string }>;
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalMemory(key: string, value: string) {
+  const next = [{ key, value }, ...getLocalMemories()].slice(0, 20);
+  localStorage.setItem("jiya_memories", JSON.stringify(next));
+}
+
+function getNumberExpression(text: string) {
+  const match = text.match(/(?:calculate|calc|hisab|kitna hota hai)\s+([0-9+*/().%\s-]+)/i);
+  return match?.[1]?.trim() ?? (/^[0-9+*/().%\s-]+$/.test(text) ? text : "");
+}
+
+function calculateExpression(expression: string): number | null {
+  const tokens = expression.match(/\d+(?:\.\d+)?|[()+\-*/%]/g);
+  if (!tokens || tokens.join("") !== expression.replace(/\s/g, "")) return null;
+  let index = 0;
+  const parsePrimary = (): number => {
+    const token = tokens[index++];
+    if (token === "(") {
+      const value = parseAdditive();
+      if (tokens[index++] !== ")") throw new Error("parenthesis");
+      return value;
+    }
+    if (token === "-") return -parsePrimary();
+    if (!token || Number.isNaN(Number(token))) throw new Error("number");
+    return Number(token);
+  };
+  const parseMultiplicative = (): number => {
+    let value = parsePrimary();
+    while (["*", "/", "%"].includes(tokens[index] ?? "")) {
+      const operator = tokens[index++];
+      const right = parsePrimary();
+      if (operator === "*") value *= right;
+      if (operator === "/") value /= right;
+      if (operator === "%") value %= right;
+    }
+    return value;
+  };
+  const parseAdditive = (): number => {
+    let value = parseMultiplicative();
+    while (["+", "-"].includes(tokens[index] ?? "")) {
+      const operator = tokens[index++];
+      const right = parseMultiplicative();
+      value = operator === "+" ? value + right : value - right;
+    }
+    return value;
+  };
+  try {
+    const result = parseAdditive();
+    return index === tokens.length && Number.isFinite(result) ? result : null;
+  } catch {
+    return null;
+  }
+}
+
+function openUrl(url: string) {
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function extractAfter(text: string, patterns: string[]) {
+  const lower = normalize(text);
+  for (const pattern of patterns) {
+    const index = lower.indexOf(pattern);
+    if (index >= 0) return text.slice(index + pattern.length).trim();
+  }
+  return "";
+}
+
+async function freeLookup(type: string, query = "") {
+  const response = await fetch(`/api/free-data?type=${encodeURIComponent(type)}&q=${encodeURIComponent(query)}`);
+  const data = (await response.json()) as Record<string, unknown>;
+  if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Free service unavailable.");
+  return data;
+}
 
 function JiyaPage() {
   const [input, setInput] = useState("");

@@ -1,0 +1,4 @@
+- [ ] Add free-first direct command engine and voice controls
+- [ ] Add Cloud-backed owner memory with local fallback
+- [ ] Replace paid AI chat dependency with free web-data routing
+- [ ] Verify mobile voice, direct actions, and persistence flows

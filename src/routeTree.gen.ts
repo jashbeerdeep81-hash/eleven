@@ -10,43 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as SareesRouteImport } from './routes/sarees'
+import { Route as ApiFreeDataRouteImport } from './routes/api/free-data'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiChatRoute = ApiChatRouteImport.update({
-  id: '/api/chat',
-  path: '/api/chat',
+const SareesRoute = SareesRouteImport.update({
+  id: '/sarees',
+  path: '/sarees',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFreeDataRoute = ApiFreeDataRouteImport.update({
+  id: '/api/free-data',
+  path: '/api/free-data',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/api/chat': typeof ApiChatRoute
+  '/sarees': typeof SareesRoute
+  '/api/free-data': typeof ApiFreeDataRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/api/chat': typeof ApiChatRoute
+  '/sarees': typeof SareesRoute
+  '/api/free-data': typeof ApiFreeDataRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/api/chat': typeof ApiChatRoute
+  '/sarees': typeof SareesRoute
+  '/api/free-data': typeof ApiFreeDataRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat'
+  fullPaths: '/' | '/sarees' | '/api/free-data'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat'
-  id: '__root__' | '/' | '/api/chat'
+  to: '/' | '/sarees' | '/api/free-data'
+  id: '__root__' | '/' | '/sarees' | '/api/free-data'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ApiChatRoute: typeof ApiChatRoute
+  SareesRoute: typeof SareesRoute
+  ApiFreeDataRoute: typeof ApiFreeDataRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,11 +68,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/chat': {
-      id: '/api/chat'
-      path: '/api/chat'
-      fullPath: '/api/chat'
-      preLoaderRoute: typeof ApiChatRouteImport
+    '/sarees': {
+      id: '/sarees'
+      path: '/sarees'
+      fullPath: '/sarees'
+      preLoaderRoute: typeof SareesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/free-data': {
+      id: '/api/free-data'
+      path: '/api/free-data'
+      fullPath: '/api/free-data'
+      preLoaderRoute: typeof ApiFreeDataRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -70,7 +87,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ApiChatRoute: ApiChatRoute,
+  SareesRoute: SareesRoute,
+  ApiFreeDataRoute: ApiFreeDataRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
