@@ -35,8 +35,14 @@ export const Route = createFileRoute("/api/free-data")({
                 humidity?: string;
                 weatherDesc?: Array<{ value?: string }>;
               }>;
+              weather?: Array<{
+                weatherDesc?: Array<{ value?: string }>;
+                hourly?: Array<{ chanceofrain?: string }>;
+              }>;
             };
             const current = data.current_condition?.[0];
+            const tomorrow = data.weather?.[1];
+            const tomorrowHour = tomorrow?.hourly?.[Math.min(4, (tomorrow.hourly?.length ?? 1) - 1)];
             return json({
               kind: "weather",
               city: query,
@@ -44,6 +50,8 @@ export const Route = createFileRoute("/api/free-data")({
               feelsLike: current?.FeelsLikeC ?? "—",
               humidity: current?.humidity ?? "—",
               description: current?.weatherDesc?.[0]?.value ?? "Weather available hai.",
+              tomorrowDescription: tomorrow?.weatherDesc?.[0]?.value ?? "",
+              tomorrowRainChance: tomorrowHour?.chanceofrain ?? "",
             });
           }
 
